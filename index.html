@@ -1,0 +1,2382 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>SEOUL LIVE</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #000;
+      font-family: Arial, "Noto Sans KR", sans-serif;
+    }
+
+    #app {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background: #000;
+    }
+
+    /* =========================
+       VIDEO
+    ========================= */
+
+    .video-layer {
+      position: absolute;
+      inset: 0;
+
+      width: 100%;
+      height: 100%;
+
+      object-fit: cover;
+
+      opacity: 0;
+
+      transition: opacity 2s ease-in-out;
+
+      background: #000;
+    }
+
+    .video-layer.active {
+      opacity: 1;
+    }
+
+    /* =========================
+       WEATHER
+    ========================= */
+
+    #weatherOverlay {
+      position: absolute;
+      inset: 0;
+      z-index: 5;
+      pointer-events: none;
+      background: transparent;
+
+      transition:
+        background 1.5s ease,
+        opacity 1.5s ease;
+    }
+
+    #weatherCanvas {
+      position: absolute;
+      inset: 0;
+
+      width: 100%;
+      height: 100%;
+
+      z-index: 6;
+      pointer-events: none;
+    }
+
+    #fogLayer {
+      position: absolute;
+      inset: -10%;
+
+      z-index: 7;
+      pointer-events: none;
+
+      opacity: 0;
+
+      transition: opacity 2s ease;
+
+      background:
+        radial-gradient(
+          ellipse at center,
+          rgba(255, 255, 255, 0.30) 0%,
+          rgba(230, 235, 240, 0.20) 35%,
+          rgba(200, 210, 220, 0.14) 65%,
+          rgba(180, 190, 200, 0.06) 100%
+        );
+
+      filter: blur(8px);
+    }
+
+    #lightning {
+      position: absolute;
+      inset: 0;
+
+      z-index: 8;
+      pointer-events: none;
+
+      opacity: 0;
+
+      background: rgba(255, 255, 255, 0.85);
+
+      transition: opacity 0.05s linear;
+    }
+
+    #darkOverlay {
+      position: absolute;
+      inset: 0;
+
+      z-index: 4;
+      pointer-events: none;
+
+      background: rgba(0, 0, 0, 0);
+
+      transition: background 2s ease;
+    }
+
+    #vignette {
+      position: absolute;
+      inset: 0;
+
+      z-index: 10;
+      pointer-events: none;
+
+      background:
+        radial-gradient(
+          ellipse at center,
+          rgba(0, 0, 0, 0) 45%,
+          rgba(0, 0, 0, 0.18) 100%
+        );
+    }
+
+    /* =========================
+       TOP INFO
+    ========================= */
+
+    #topInfo {
+      position: absolute;
+
+      top: 28px;
+      left: 32px;
+
+      z-index: 20;
+
+      color: white;
+
+      text-shadow:
+        0 2px 8px rgba(0, 0, 0, 0.7);
+    }
+
+    #brand {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: 3px;
+    }
+
+    #location {
+      margin-top: 5px;
+
+      font-size: 13px;
+
+      opacity: 0.8;
+
+      letter-spacing: 1px;
+    }
+
+    /* =========================
+       CLOCK
+    ========================= */
+
+    #clockBox {
+      position: absolute;
+
+      top: 28px;
+      right: 32px;
+
+      z-index: 20;
+
+      color: white;
+
+      text-align: right;
+
+      text-shadow:
+        0 2px 8px rgba(0, 0, 0, 0.7);
+    }
+
+    #clock {
+      font-size: 30px;
+
+      font-weight: 600;
+
+      letter-spacing: 2px;
+    }
+
+    #date {
+      margin-top: 4px;
+
+      font-size: 12px;
+
+      opacity: 0.8;
+    }
+
+    /* =========================
+       WEATHER INFO
+    ========================= */
+
+    #weatherBox {
+      position: absolute;
+
+      left: 32px;
+      bottom: 28px;
+
+      z-index: 20;
+
+      color: white;
+
+      text-shadow:
+        0 2px 8px rgba(0, 0, 0, 0.8);
+    }
+
+    #weatherMain {
+      display: flex;
+
+      align-items: center;
+
+      gap: 10px;
+    }
+
+    #weatherIcon {
+      font-size: 28px;
+    }
+
+    #temperature {
+      font-size: 28px;
+
+      font-weight: 600;
+    }
+
+    #weatherDescription {
+      margin-top: 4px;
+
+      font-size: 13px;
+
+      opacity: 0.85;
+    }
+
+    #sunInfo {
+      margin-top: 5px;
+
+      font-size: 11px;
+
+      opacity: 0.7;
+    }
+
+    /* =========================
+       STATUS
+    ========================= */
+
+    #status {
+      position: absolute;
+
+      right: 32px;
+      bottom: 28px;
+
+      z-index: 20;
+
+      color: white;
+
+      font-size: 11px;
+
+      opacity: 0.75;
+
+      text-shadow:
+        0 2px 8px rgba(0, 0, 0, 0.8);
+    }
+
+    /* =========================
+       TEST MODE
+    ========================= */
+
+    #testMode {
+      position: absolute;
+
+      left: 50%;
+      top: 22px;
+
+      transform: translateX(-50%);
+
+      z-index: 30;
+
+      padding: 7px 13px;
+
+      border-radius: 20px;
+
+      background: rgba(0, 0, 0, 0.55);
+
+      color: white;
+
+      font-size: 12px;
+
+      letter-spacing: 0.5px;
+
+      opacity: 0;
+
+      pointer-events: none;
+
+      transition: opacity 0.3s ease;
+    }
+
+    #testMode.visible {
+      opacity: 1;
+    }
+
+    /* =========================
+       MOBILE
+    ========================= */
+
+    @media (max-width: 700px) {
+      #topInfo {
+        top: 18px;
+        left: 18px;
+      }
+
+      #clockBox {
+        top: 18px;
+        right: 18px;
+      }
+
+      #weatherBox {
+        left: 18px;
+        bottom: 18px;
+      }
+
+      #status {
+        right: 18px;
+        bottom: 18px;
+      }
+
+      #brand {
+        font-size: 17px;
+      }
+
+      #clock {
+        font-size: 22px;
+      }
+
+      #temperature {
+        font-size: 22px;
+      }
+
+      #testMode {
+        top: 70px;
+        font-size: 11px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div id="app">
+
+    <!-- =========================
+         TIME OF DAY VIDEOS
+    ========================= -->
+
+    <video
+      id="morningVideo"
+      class="video-layer"
+      src="./assets/morning.mp4"
+      autoplay
+      muted
+      loop
+      playsinline
+      preload="auto"
+    ></video>
+
+    <video
+      id="dayVideo"
+      class="video-layer"
+      src="./assets/day.mp4"
+      muted
+      loop
+      playsinline
+      preload="auto"
+    ></video>
+
+    <video
+      id="eveningVideo"
+      class="video-layer"
+      src="./assets/evening.mp4"
+      muted
+      loop
+      playsinline
+      preload="auto"
+    ></video>
+
+    <video
+      id="nightVideo"
+      class="video-layer"
+      src="./assets/night.mp4"
+      muted
+      loop
+      playsinline
+      preload="auto"
+    ></video>
+
+
+    <!-- =========================
+         WEATHER EFFECTS
+    ========================= -->
+
+    <div id="weatherOverlay"></div>
+
+    <canvas id="weatherCanvas"></canvas>
+
+    <div id="fogLayer"></div>
+
+    <div id="lightning"></div>
+
+    <div id="darkOverlay"></div>
+
+    <div id="vignette"></div>
+
+
+    <!-- =========================
+         TEST MODE
+    ========================= -->
+
+    <div id="testMode">
+      WEATHER TEST
+    </div>
+
+
+    <!-- =========================
+         BRAND
+    ========================= -->
+
+    <div id="topInfo">
+
+      <div id="brand">
+        SEOUL LIVE
+      </div>
+
+      <div id="location">
+        SEOUL · KOREA
+      </div>
+
+    </div>
+
+
+    <!-- =========================
+         CLOCK
+    ========================= -->
+
+    <div id="clockBox">
+
+      <div id="clock">
+        00:00:00
+      </div>
+
+      <div id="date">
+        0000.00.00
+      </div>
+
+    </div>
+
+
+    <!-- =========================
+         WEATHER
+    ========================= -->
+
+    <div id="weatherBox">
+
+      <div id="weatherMain">
+
+        <div id="weatherIcon">
+          ☀️
+        </div>
+
+        <div id="temperature">
+          --°
+        </div>
+
+      </div>
+
+      <div id="weatherDescription">
+        서울 날씨 불러오는 중...
+      </div>
+
+      <div id="sunInfo">
+        일출 --:-- · 일몰 --:--
+      </div>
+
+    </div>
+
+
+    <!-- =========================
+         STATUS
+    ========================= -->
+
+    <div id="status">
+      LIVE · SEOUL
+    </div>
+
+  </div>
+
+
+  <script>
+
+    /* ==================================================
+       SEOUL LOCATION
+    ================================================== */
+
+    const SEOUL_LATITUDE = 37.5665;
+
+    const SEOUL_LONGITUDE = 126.9780;
+
+
+    /* ==================================================
+       TIME SETTINGS
+    ================================================== */
+
+    const MORNING_BEFORE_SUNRISE = 60;
+
+    const MORNING_AFTER_SUNRISE = 120;
+
+    const EVENING_BEFORE_SUNSET = 90;
+
+    const EVENING_AFTER_SUNSET = 90;
+
+
+    /* ==================================================
+       VIDEOS
+    ================================================== */
+
+    const videos = {
+
+      morning:
+        document.getElementById(
+          "morningVideo"
+        ),
+
+      day:
+        document.getElementById(
+          "dayVideo"
+        ),
+
+      evening:
+        document.getElementById(
+          "eveningVideo"
+        ),
+
+      night:
+        document.getElementById(
+          "nightVideo"
+        )
+
+    };
+
+
+    let currentPeriod = null;
+
+    let sunriseTime = null;
+
+    let sunsetTime = null;
+
+
+    /* ==================================================
+       INITIAL VIDEO
+    ================================================== */
+
+    function getInitialPeriodByHour() {
+
+      const hour = Number(
+        new Intl.DateTimeFormat(
+          "en-US",
+          {
+            timeZone: "Asia/Seoul",
+            hour: "2-digit",
+            hour12: false
+          }
+        ).format(
+          new Date()
+        )
+      );
+
+      if (hour >= 5 && hour < 10) {
+        return "morning";
+      }
+
+      if (hour >= 10 && hour < 17) {
+        return "day";
+      }
+
+      if (hour >= 17 && hour < 20) {
+        return "evening";
+      }
+
+      return "night";
+    }
+
+
+    /* ==================================================
+       SEOUL CLOCK
+    ================================================== */
+
+    function getSeoulNow() {
+
+      const parts =
+        new Intl.DateTimeFormat(
+          "en-US",
+          {
+            timeZone:
+              "Asia/Seoul",
+
+            year:
+              "numeric",
+
+            month:
+              "2-digit",
+
+            day:
+              "2-digit",
+
+            hour:
+              "2-digit",
+
+            minute:
+              "2-digit",
+
+            second:
+              "2-digit",
+
+            hour12:
+              false
+          }
+        ).formatToParts(
+          new Date()
+        );
+
+
+      const result = {};
+
+
+      for (
+        const part of parts
+      ) {
+
+        result[part.type] =
+          part.value;
+
+      }
+
+
+      return result;
+    }
+
+
+    /* ==================================================
+       CLOCK
+    ================================================== */
+
+    function updateClock() {
+
+      const now =
+        getSeoulNow();
+
+
+      document.getElementById(
+        "clock"
+      ).textContent =
+        `${now.hour}:${now.minute}:${now.second}`;
+
+
+      document.getElementById(
+        "date"
+      ).textContent =
+        `${now.year}.${now.month}.${now.day}`;
+    }
+
+
+    updateClock();
+
+
+    setInterval(
+      updateClock,
+      1000
+    );
+
+
+    /* ==================================================
+       TIME HELPERS
+    ================================================== */
+
+    function parseTimeToMinutes(
+      dateString
+    ) {
+
+      if (!dateString) {
+        return null;
+      }
+
+
+      const date =
+        new Date(
+          dateString
+        );
+
+
+      const parts =
+        new Intl.DateTimeFormat(
+          "en-US",
+          {
+            timeZone:
+              "Asia/Seoul",
+
+            hour:
+              "2-digit",
+
+            minute:
+              "2-digit",
+
+            hour12:
+              false
+          }
+        ).formatToParts(
+          date
+        );
+
+
+      let hour = 0;
+
+      let minute = 0;
+
+
+      for (
+        const part of parts
+      ) {
+
+        if (
+          part.type === "hour"
+        ) {
+
+          hour =
+            Number(
+              part.value
+            );
+
+        }
+
+
+        if (
+          part.type === "minute"
+        ) {
+
+          minute =
+            Number(
+              part.value
+            );
+
+        }
+
+      }
+
+
+      return (
+        hour * 60 +
+        minute
+      );
+    }
+
+
+    function getCurrentMinutes() {
+
+      const now =
+        getSeoulNow();
+
+
+      return (
+        Number(now.hour) * 60 +
+        Number(now.minute)
+      );
+    }
+
+
+    /* ==================================================
+       VIDEO PERIOD
+    ================================================== */
+
+    function getVideoPeriod() {
+
+      if (
+        sunriseTime === null ||
+        sunsetTime === null
+      ) {
+
+        return getInitialPeriodByHour();
+
+      }
+
+
+      const current =
+        getCurrentMinutes();
+
+
+      const morningStart =
+        sunriseTime -
+        MORNING_BEFORE_SUNRISE;
+
+
+      const morningEnd =
+        sunriseTime +
+        MORNING_AFTER_SUNRISE;
+
+
+      const eveningStart =
+        sunsetTime -
+        EVENING_BEFORE_SUNSET;
+
+
+      const eveningEnd =
+        sunsetTime +
+        EVENING_AFTER_SUNSET;
+
+
+      if (
+        current >= morningStart &&
+        current < morningEnd
+      ) {
+
+        return "morning";
+
+      }
+
+
+      if (
+        current >= eveningStart &&
+        current < eveningEnd
+      ) {
+
+        return "evening";
+
+      }
+
+
+      if (
+        current >= morningEnd &&
+        current < eveningStart
+      ) {
+
+        return "day";
+
+      }
+
+
+      return "night";
+    }
+
+
+    /* ==================================================
+       SWITCH VIDEO
+    ================================================== */
+
+    async function switchVideo(
+      period
+    ) {
+
+      if (
+        period === currentPeriod
+      ) {
+
+        const currentVideo =
+          videos[period];
+
+        if (
+          currentVideo &&
+          currentVideo.paused
+        ) {
+
+          currentVideo
+            .play()
+            .catch(
+              () => {}
+            );
+
+        }
+
+        return;
+      }
+
+
+      currentPeriod =
+        period;
+
+
+      const newVideo =
+        videos[period];
+
+
+      if (!newVideo) {
+        return;
+      }
+
+
+      Object.entries(
+        videos
+      ).forEach(
+        ([name, video]) => {
+
+          if (
+            name === period
+          ) {
+
+            video.classList.add(
+              "active"
+            );
+
+          } else {
+
+            video.classList.remove(
+              "active"
+            );
+
+            video.pause();
+
+          }
+
+        }
+      );
+
+
+      try {
+
+        newVideo.currentTime = 0;
+
+      } catch (error) {
+
+        console.log(error);
+
+      }
+
+
+      try {
+
+        await newVideo.play();
+
+      } catch (error) {
+
+        console.log(
+          "영상 재생 대기:",
+          error
+        );
+
+      }
+
+
+      const darkOverlay =
+        document.getElementById(
+          "darkOverlay"
+        );
+
+
+      if (
+        period === "night"
+      ) {
+
+        darkOverlay.style.background =
+          "rgba(0,0,20,0.10)";
+
+      } else {
+
+        darkOverlay.style.background =
+          "rgba(0,0,0,0)";
+
+      }
+    }
+
+
+    /* ==================================================
+       VIDEO ERROR CHECK
+    ================================================== */
+
+    Object.values(
+      videos
+    ).forEach(
+      (video) => {
+
+        video.addEventListener(
+          "error",
+          () => {
+
+            console.error(
+              "영상 로드 실패:",
+              video.src
+            );
+
+          }
+        );
+
+      }
+    );
+
+
+    /* ==================================================
+       WEATHER API
+    ================================================== */
+
+    const WEATHER_API =
+      `https://api.open-meteo.com/v1/forecast` +
+      `?latitude=${SEOUL_LATITUDE}` +
+      `&longitude=${SEOUL_LONGITUDE}` +
+      `&current=` +
+      `temperature_2m,` +
+      `relative_humidity_2m,` +
+      `apparent_temperature,` +
+      `precipitation,` +
+      `rain,` +
+      `showers,` +
+      `snowfall,` +
+      `weather_code,` +
+      `cloud_cover,` +
+      `wind_speed_10m,` +
+      `wind_direction_10m,` +
+      `wind_gusts_10m,` +
+      `is_day` +
+      `&daily=sunrise,sunset` +
+      `&timezone=Asia%2FSeoul`;
+
+
+    /* ==================================================
+       WEATHER TEXT
+    ================================================== */
+
+    function getWeatherText(
+      code
+    ) {
+
+      if (code === 0) {
+        return "맑음";
+      }
+
+      if (code === 1) {
+        return "대체로 맑음";
+      }
+
+      if (code === 2) {
+        return "부분적으로 흐림";
+      }
+
+      if (code === 3) {
+        return "흐림";
+      }
+
+      if (
+        code === 45 ||
+        code === 48
+      ) {
+        return "안개";
+      }
+
+      if (
+        code >= 51 &&
+        code <= 55
+      ) {
+        return "이슬비";
+      }
+
+      if (
+        code >= 61 &&
+        code <= 67
+      ) {
+        return "비";
+      }
+
+      if (
+        code >= 71 &&
+        code <= 77
+      ) {
+        return "눈";
+      }
+
+      if (
+        code >= 80 &&
+        code <= 82
+      ) {
+        return "소나기";
+      }
+
+      if (
+        code === 85 ||
+        code === 86
+      ) {
+        return "눈 소나기";
+      }
+
+      if (
+        code === 95 ||
+        code === 96 ||
+        code === 99
+      ) {
+        return "천둥번개";
+      }
+
+      return "서울 날씨";
+    }
+
+
+    /* ==================================================
+       WEATHER ICON
+    ================================================== */
+
+    function getWeatherIcon(
+      code
+    ) {
+
+      if (code === 0) {
+        return "☀️";
+      }
+
+      if (code === 1) {
+        return "🌤️";
+      }
+
+      if (code === 2) {
+        return "⛅";
+      }
+
+      if (code === 3) {
+        return "☁️";
+      }
+
+      if (
+        code === 45 ||
+        code === 48
+      ) {
+        return "🌫️";
+      }
+
+      if (
+        code >= 51 &&
+        code <= 67
+      ) {
+        return "🌧️";
+      }
+
+      if (
+        code >= 71 &&
+        code <= 77
+      ) {
+        return "❄️";
+      }
+
+      if (
+        code >= 80 &&
+        code <= 82
+      ) {
+        return "🌦️";
+      }
+
+      if (
+        code === 85 ||
+        code === 86
+      ) {
+        return "🌨️";
+      }
+
+      if (
+        code === 95 ||
+        code === 96 ||
+        code === 99
+      ) {
+        return "⛈️";
+      }
+
+      return "🌤️";
+    }
+
+
+    /* ==================================================
+       WEATHER EFFECT ENGINE
+    ================================================== */
+
+    const canvas =
+      document.getElementById(
+        "weatherCanvas"
+      );
+
+    const ctx =
+      canvas.getContext(
+        "2d"
+      );
+
+
+    let weatherType =
+      "clear";
+
+    let particles = [];
+
+    let lightningTimer = null;
+
+
+    /* ==================================================
+       RESIZE CANVAS
+    ================================================== */
+
+    function resizeCanvas() {
+
+      const dpr =
+        Math.min(
+          window.devicePixelRatio || 1,
+          2
+        );
+
+
+      canvas.width =
+        window.innerWidth * dpr;
+
+      canvas.height =
+        window.innerHeight * dpr;
+
+
+      canvas.style.width =
+        window.innerWidth + "px";
+
+      canvas.style.height =
+        window.innerHeight + "px";
+
+
+      ctx.setTransform(
+        dpr,
+        0,
+        0,
+        dpr,
+        0,
+        0
+      );
+
+
+      createParticles();
+    }
+
+
+    window.addEventListener(
+      "resize",
+      resizeCanvas
+    );
+
+
+    /* ==================================================
+       CREATE PARTICLES
+    ================================================== */
+
+    function createParticles() {
+
+      particles = [];
+
+
+      const width =
+        window.innerWidth;
+
+      const height =
+        window.innerHeight;
+
+
+      /* RAIN */
+
+      if (
+        weatherType === "rain" ||
+        weatherType === "storm"
+      ) {
+
+        const count =
+          weatherType === "storm"
+            ? Math.floor(
+                (width * height) / 6000
+              )
+            : Math.floor(
+                (width * height) / 10000
+              );
+
+
+        for (
+          let i = 0;
+          i < count;
+          i++
+        ) {
+
+          particles.push({
+
+            x:
+              Math.random() * width,
+
+            y:
+              Math.random() * height,
+
+            length:
+              12 +
+              Math.random() * 24,
+
+            speed:
+              9 +
+              Math.random() * 14,
+
+            opacity:
+              0.20 +
+              Math.random() * 0.35,
+
+            width:
+              0.7 +
+              Math.random() * 1.2,
+
+            drift:
+              -1 +
+              Math.random() * 2
+
+          });
+
+        }
+      }
+
+
+      /* SNOW */
+
+      if (
+        weatherType === "snow"
+      ) {
+
+        const count =
+          Math.floor(
+            (width * height) / 12000
+          );
+
+
+        for (
+          let i = 0;
+          i < count;
+          i++
+        ) {
+
+          particles.push({
+
+            x:
+              Math.random() * width,
+
+            y:
+              Math.random() * height,
+
+            radius:
+              1 +
+              Math.random() * 3.5,
+
+            speed:
+              0.5 +
+              Math.random() * 1.8,
+
+            drift:
+              -0.5 +
+              Math.random()
+
+          });
+
+        }
+      }
+    }
+
+
+    /* ==================================================
+       DRAW RAIN
+    ================================================== */
+
+    function drawRain() {
+
+      const width =
+        window.innerWidth;
+
+      const height =
+        window.innerHeight;
+
+
+      ctx.clearRect(
+        0,
+        0,
+        width,
+        height
+      );
+
+
+      ctx.lineCap =
+        "round";
+
+
+      for (
+        const p of particles
+      ) {
+
+        ctx.beginPath();
+
+
+        ctx.moveTo(
+          p.x,
+          p.y
+        );
+
+
+        ctx.lineTo(
+          p.x +
+            p.drift * 3,
+
+          p.y +
+            p.length
+        );
+
+
+        ctx.strokeStyle =
+          `rgba(215,230,255,${p.opacity})`;
+
+
+        ctx.lineWidth =
+          p.width;
+
+
+        ctx.stroke();
+
+
+        p.y +=
+          p.speed;
+
+        p.x +=
+          p.drift;
+
+
+        if (
+          p.y >
+          height + 30
+        ) {
+
+          p.y = -30;
+
+          p.x =
+            Math.random() *
+            width;
+
+        }
+      }
+    }
+
+
+    /* ==================================================
+       DRAW SNOW
+    ================================================== */
+
+    function drawSnow() {
+
+      const width =
+        window.innerWidth;
+
+      const height =
+        window.innerHeight;
+
+
+      ctx.clearRect(
+        0,
+        0,
+        width,
+        height
+      );
+
+
+      for (
+        const p of particles
+      ) {
+
+        ctx.beginPath();
+
+
+        ctx.arc(
+          p.x,
+          p.y,
+          p.radius,
+          0,
+          Math.PI * 2
+        );
+
+
+        ctx.fillStyle =
+          "rgba(255,255,255,0.78)";
+
+
+        ctx.fill();
+
+
+        p.y +=
+          p.speed;
+
+
+        p.x +=
+          Math.sin(
+            p.y * 0.01
+          ) *
+          0.4 +
+          p.drift;
+
+
+        if (
+          p.y >
+          height + 10
+        ) {
+
+          p.y = -10;
+
+          p.x =
+            Math.random() *
+            width;
+
+        }
+
+
+        if (
+          p.x < -10
+        ) {
+
+          p.x =
+            width + 10;
+
+        }
+
+
+        if (
+          p.x >
+          width + 10
+        ) {
+
+          p.x = -10;
+
+        }
+      }
+    }
+
+
+    /* ==================================================
+       ANIMATION
+    ================================================== */
+
+    function animateWeather() {
+
+      if (
+        weatherType === "rain" ||
+        weatherType === "storm"
+      ) {
+
+        drawRain();
+
+      }
+
+      else if (
+        weatherType === "snow"
+      ) {
+
+        drawSnow();
+
+      }
+
+      else {
+
+        ctx.clearRect(
+          0,
+          0,
+          window.innerWidth,
+          window.innerHeight
+        );
+
+      }
+
+
+      requestAnimationFrame(
+        animateWeather
+      );
+    }
+
+
+    /* ==================================================
+       APPLY WEATHER
+    ================================================== */
+
+    function applyWeatherEffect(
+      type
+    ) {
+
+      weatherType =
+        type;
+
+
+      const weatherOverlay =
+        document.getElementById(
+          "weatherOverlay"
+        );
+
+      const fogLayer =
+        document.getElementById(
+          "fogLayer"
+        );
+
+      const lightning =
+        document.getElementById(
+          "lightning"
+        );
+
+
+      weatherOverlay.style.background =
+        "transparent";
+
+      fogLayer.style.opacity =
+        "0";
+
+      lightning.style.opacity =
+        "0";
+
+
+      if (
+        lightningTimer
+      ) {
+
+        clearTimeout(
+          lightningTimer
+        );
+
+        lightningTimer =
+          null;
+      }
+
+
+      if (
+        type === "clear"
+      ) {
+
+        createParticles();
+
+        return;
+      }
+
+
+      if (
+        type === "cloudy"
+      ) {
+
+        weatherOverlay.style.background =
+          "rgba(40,50,65,0.15)";
+
+        createParticles();
+
+        return;
+      }
+
+
+      if (
+        type === "rain"
+      ) {
+
+        weatherOverlay.style.background =
+          "rgba(40,55,75,0.08)";
+
+        createParticles();
+
+        return;
+      }
+
+
+      if (
+        type === "snow"
+      ) {
+
+        weatherOverlay.style.background =
+          "rgba(210,220,235,0.06)";
+
+        createParticles();
+
+        return;
+      }
+
+
+      if (
+        type === "fog"
+      ) {
+
+        fogLayer.style.opacity =
+          "0.78";
+
+        createParticles();
+
+        return;
+      }
+
+
+      if (
+        type === "storm"
+      ) {
+
+        weatherOverlay.style.background =
+          "rgba(25,35,55,0.14)";
+
+        createParticles();
+
+        startLightning();
+
+        return;
+      }
+
+
+      createParticles();
+    }
+
+
+    /* ==================================================
+       LIGHTNING
+    ================================================== */
+
+    function startLightning() {
+
+      function scheduleLightning() {
+
+        if (
+          weatherType !== "storm"
+        ) {
+
+          return;
+        }
+
+
+        const delay =
+          3000 +
+          Math.random() *
+          7000;
+
+
+        lightningTimer =
+          setTimeout(
+            () => {
+
+              flashLightning();
+
+              scheduleLightning();
+
+            },
+            delay
+          );
+      }
+
+
+      scheduleLightning();
+    }
+
+
+    function flashLightning() {
+
+      if (
+        weatherType !== "storm"
+      ) {
+
+        return;
+      }
+
+
+      const lightning =
+        document.getElementById(
+          "lightning"
+        );
+
+
+      lightning.style.opacity =
+        "0.8";
+
+
+      setTimeout(
+        () => {
+
+          lightning.style.opacity =
+            "0";
+
+        },
+        80
+      );
+
+
+      setTimeout(
+        () => {
+
+          if (
+            weatherType ===
+            "storm"
+          ) {
+
+            lightning.style.opacity =
+              "0.45";
+
+
+            setTimeout(
+              () => {
+
+                lightning.style.opacity =
+                  "0";
+
+              },
+              60
+            );
+          }
+
+        },
+        140
+      );
+    }
+
+
+    /* ==================================================
+       WEATHER TEST
+    ================================================== */
+
+    const testWeatherList = [
+
+      {
+        type: "clear",
+        name: "☀️ 맑음"
+      },
+
+      {
+        type: "cloudy",
+        name: "☁️ 흐림"
+      },
+
+      {
+        type: "rain",
+        name: "🌧️ 비"
+      },
+
+      {
+        type: "snow",
+        name: "❄️ 눈"
+      },
+
+      {
+        type: "fog",
+        name: "🌫️ 안개"
+      },
+
+      {
+        type: "storm",
+        name: "⛈️ 천둥번개"
+      }
+
+    ];
+
+
+    let testWeatherIndex =
+      -1;
+
+    let weatherTestMode =
+      false;
+
+
+    function cycleWeatherTest() {
+
+      weatherTestMode =
+        true;
+
+
+      testWeatherIndex++;
+
+
+      if (
+        testWeatherIndex >=
+        testWeatherList.length
+      ) {
+
+        testWeatherIndex = 0;
+
+      }
+
+
+      const testWeather =
+        testWeatherList[
+          testWeatherIndex
+        ];
+
+
+      applyWeatherEffect(
+        testWeather.type
+      );
+
+
+      const testMode =
+        document.getElementById(
+          "testMode"
+        );
+
+
+      testMode.textContent =
+        `WEATHER TEST · ${testWeather.name} · R키로 다음`;
+
+
+      testMode.classList.add(
+        "visible"
+      );
+
+
+      document.getElementById(
+        "status"
+      ).textContent =
+        `TEST · ${testWeather.name}`;
+    }
+
+
+    /* ==================================================
+       R KEY
+    ================================================== */
+
+    window.addEventListener(
+      "keydown",
+      (event) => {
+
+        const tag =
+          event.target?.tagName;
+
+
+        if (
+          tag === "INPUT" ||
+          tag === "TEXTAREA"
+        ) {
+
+          return;
+        }
+
+
+        if (
+          event.key.toLowerCase() ===
+          "r"
+        ) {
+
+          cycleWeatherTest();
+
+        }
+
+      }
+    );
+
+
+    /* ==================================================
+       ESC = REAL WEATHER
+    ================================================== */
+
+    window.addEventListener(
+      "keydown",
+      (event) => {
+
+        if (
+          event.key === "Escape"
+        ) {
+
+          weatherTestMode =
+            false;
+
+
+          testWeatherIndex =
+            -1;
+
+
+          const testMode =
+            document.getElementById(
+              "testMode"
+            );
+
+
+          testMode.classList.remove(
+            "visible"
+          );
+
+
+          loadWeather();
+        }
+
+      }
+    );
+
+
+    /* ==================================================
+       LOAD REAL WEATHER
+    ================================================== */
+
+    async function loadWeather() {
+
+      try {
+
+        const response =
+          await fetch(
+            WEATHER_API
+          );
+
+
+        if (!response.ok) {
+
+          throw new Error(
+            "Weather API error"
+          );
+        }
+
+
+        const data =
+          await response.json();
+
+
+        const current =
+          data.current;
+
+
+        const temperature =
+          Math.round(
+            current.temperature_2m
+          );
+
+
+        const weatherCode =
+          current.weather_code;
+
+
+        document.getElementById(
+          "temperature"
+        ).textContent =
+          `${temperature}°`;
+
+
+        document.getElementById(
+          "weatherDescription"
+        ).textContent =
+          getWeatherText(
+            weatherCode
+          );
+
+
+        document.getElementById(
+          "weatherIcon"
+        ).textContent =
+          getWeatherIcon(
+            weatherCode
+          );
+
+
+        /* =========================
+           SUNRISE / SUNSET
+        ========================= */
+
+        const sunrise =
+          data.daily.sunrise[0];
+
+        const sunset =
+          data.daily.sunset[0];
+
+
+        sunriseTime =
+          parseTimeToMinutes(
+            sunrise
+          );
+
+        sunsetTime =
+          parseTimeToMinutes(
+            sunset
+          );
+
+
+        const sunriseDate =
+          new Date(
+            sunrise
+          );
+
+        const sunsetDate =
+          new Date(
+            sunset
+          );
+
+
+        const sunriseText =
+          sunriseDate.toLocaleTimeString(
+            "ko-KR",
+            {
+              timeZone:
+                "Asia/Seoul",
+
+              hour:
+                "2-digit",
+
+              minute:
+                "2-digit",
+
+              hour12:
+                false
+            }
+          );
+
+
+        const sunsetText =
+          sunsetDate.toLocaleTimeString(
+            "ko-KR",
+            {
+              timeZone:
+                "Asia/Seoul",
+
+              hour:
+                "2-digit",
+
+              minute:
+                "2-digit",
+
+              hour12:
+                false
+            }
+          );
+
+
+        document.getElementById(
+          "sunInfo"
+        ).textContent =
+          `일출 ${sunriseText} · 일몰 ${sunsetText}`;
+
+
+        /* =========================
+           VIDEO
+        ========================= */
+
+        updateVideoPeriod();
+
+
+        /* =========================
+           WEATHER EFFECT
+        ========================= */
+
+        if (
+          !weatherTestMode
+        ) {
+
+          let effectType =
+            "clear";
+
+
+          if (
+            weatherCode === 0
+          ) {
+
+            effectType =
+              "clear";
+
+          }
+
+          else if (
+            weatherCode === 1 ||
+            weatherCode === 2 ||
+            weatherCode === 3
+          ) {
+
+            effectType =
+              "cloudy";
+
+          }
+
+          else if (
+            weatherCode === 45 ||
+            weatherCode === 48
+          ) {
+
+            effectType =
+              "fog";
+
+          }
+
+          else if (
+            (
+              weatherCode >= 51 &&
+              weatherCode <= 67
+            ) ||
+            (
+              weatherCode >= 80 &&
+              weatherCode <= 82
+            )
+          ) {
+
+            effectType =
+              "rain";
+
+          }
+
+          else if (
+            (
+              weatherCode >= 71 &&
+              weatherCode <= 77
+            ) ||
+            weatherCode === 85 ||
+            weatherCode === 86
+          ) {
+
+            effectType =
+              "snow";
+
+          }
+
+          else if (
+            weatherCode === 95 ||
+            weatherCode === 96 ||
+            weatherCode === 99
+          ) {
+
+            effectType =
+              "storm";
+
+          }
+
+
+          applyWeatherEffect(
+            effectType
+          );
+
+
+          document.getElementById(
+            "status"
+          ).textContent =
+            `LIVE · SEOUL · ${getWeatherText(weatherCode)}`;
+        }
+
+      }
+
+      catch (error) {
+
+        console.error(
+          "날씨 정보를 불러오지 못했습니다.",
+          error
+        );
+
+
+        if (
+          !currentPeriod
+        ) {
+
+          switchVideo(
+            getInitialPeriodByHour()
+          );
+
+        }
+
+      }
+    }
+
+
+    /* ==================================================
+       VIDEO PERIOD UPDATE
+    ================================================== */
+
+    function updateVideoPeriod() {
+
+      const period =
+        getVideoPeriod();
+
+
+      switchVideo(
+        period
+      );
+    }
+
+
+    /* ==================================================
+       INITIAL START
+    ================================================== */
+
+    const initialPeriod =
+      getInitialPeriodByHour();
+
+
+    switchVideo(
+      initialPeriod
+    );
+
+
+    resizeCanvas();
+
+    animateWeather();
+
+
+    loadWeather();
+
+
+    /* ==================================================
+       EVERY 1 MINUTE
+    ================================================== */
+
+    setInterval(
+      updateVideoPeriod,
+      60 * 1000
+    );
+
+
+    /* ==================================================
+       EVERY 10 MINUTES
+    ================================================== */
+
+    setInterval(
+      loadWeather,
+      10 * 60 * 1000
+    );
+
+
+    /* ==================================================
+       VISIBILITY
+    ================================================== */
+
+    document.addEventListener(
+      "visibilitychange",
+      () => {
+
+        if (
+          document.visibilityState ===
+          "visible"
+        ) {
+
+          if (
+            currentPeriod
+          ) {
+
+            videos[
+              currentPeriod
+            ]
+            .play()
+            .catch(
+              () => {}
+            );
+
+          }
+
+        }
+
+      }
+    );
+
+
+    /* ==================================================
+       WINDOW FOCUS
+    ================================================== */
+
+    window.addEventListener(
+      "focus",
+      () => {
+
+        if (
+          currentPeriod
+        ) {
+
+          videos[
+            currentPeriod
+          ]
+          .play()
+          .catch(
+            () => {}
+          );
+
+        }
+
+      }
+    );
+
+  </script>
+
+</body>
+</html>
