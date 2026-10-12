@@ -6,8 +6,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#000000">
   <title>SEOUL LIVE</title>
+
   <style>
-    * { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+    }
 
     html, body {
       margin: 0;
@@ -42,21 +45,27 @@
       pointer-events: none;
       background: linear-gradient(
         to bottom,
-        rgba(0,0,0,.22),
+        rgba(0, 0, 0, 0.22),
         transparent 25%,
         transparent 70%,
-        rgba(0,0,0,.28)
+        rgba(0, 0, 0, 0.28)
       );
     }
 
-    #topInfo, #clockBox, #weatherBox, #status {
+    #topInfo,
+    #clockBox,
+    #weatherBox,
+    #status {
       position: absolute;
       z-index: 2;
       color: white;
-      text-shadow: 0 2px 10px rgba(0,0,0,.8);
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
     }
 
-    #topInfo { top: 28px; left: 32px; }
+    #topInfo {
+      top: 28px;
+      left: 32px;
+    }
 
     #brand {
       font-size: 22px;
@@ -68,7 +77,7 @@
       margin-top: 5px;
       font-size: 12px;
       letter-spacing: 1px;
-      opacity: .8;
+      opacity: 0.8;
     }
 
     #clockBox {
@@ -87,10 +96,13 @@
     #date {
       margin-top: 5px;
       font-size: 12px;
-      opacity: .8;
+      opacity: 0.8;
     }
 
-    #weatherBox { left: 32px; bottom: 28px; }
+    #weatherBox {
+      left: 32px;
+      bottom: 28px;
+    }
 
     #weatherMain {
       display: flex;
@@ -98,7 +110,8 @@
       gap: 10px;
     }
 
-    #weatherIcon, #temperature {
+    #weatherIcon,
+    #temperature {
       font-size: 28px;
       font-weight: 600;
     }
@@ -111,28 +124,54 @@
     #sunInfo {
       margin-top: 5px;
       font-size: 11px;
-      opacity: .8;
+      opacity: 0.8;
     }
 
     #status {
       right: 32px;
       bottom: 28px;
       font-size: 11px;
-      opacity: .8;
+      opacity: 0.8;
       text-align: right;
     }
 
     @media (max-width: 700px) {
-      #topInfo { top: 18px; left: 18px; }
-      #clockBox { top: 18px; right: 18px; }
-      #weatherBox { left: 18px; bottom: 18px; }
-      #status { right: 18px; bottom: 18px; }
-      #brand { font-size: 17px; }
-      #clock { font-size: 22px; }
-      #weatherIcon, #temperature { font-size: 23px; }
+      #topInfo {
+        top: 18px;
+        left: 18px;
+      }
+
+      #clockBox {
+        top: 18px;
+        right: 18px;
+      }
+
+      #weatherBox {
+        left: 18px;
+        bottom: 18px;
+      }
+
+      #status {
+        right: 18px;
+        bottom: 18px;
+      }
+
+      #brand {
+        font-size: 17px;
+      }
+
+      #clock {
+        font-size: 22px;
+      }
+
+      #weatherIcon,
+      #temperature {
+        font-size: 23px;
+      }
     }
   </style>
 </head>
+
 <body>
   <main id="app">
     <video
@@ -153,13 +192,13 @@
     </div>
 
     <div id="clockBox">
-      <div id="clock">00:00:00</div>
-      <div id="date">0000.00.00</div>
+      <div id="clock">--:--:--</div>
+      <div id="date">----.--.--</div>
     </div>
 
     <div id="weatherBox">
       <div id="weatherMain">
-        <div id="weatherIcon">☀️</div>
+        <div id="weatherIcon">🌤️</div>
         <div id="temperature">--°</div>
       </div>
       <div id="weatherDescription">서울 날씨 불러오는 중...</div>
@@ -170,21 +209,24 @@
   </main>
 
   <script>
-    // 배경 영상: morning_clear.mp4 하나만 반복 재생
+    "use strict";
+
+    // 배경 영상
     const video = document.getElementById("backgroundVideo");
 
     video.addEventListener("error", () => {
       console.error(
-        "배경 영상 로드 실패:",
+        "배경 영상을 불러오지 못했습니다.",
         video.currentSrc,
         video.error
       );
+
       document.getElementById("status").textContent =
         "VIDEO LOAD ERROR";
     });
 
     video.play().catch((error) => {
-      console.warn("자동 재생을 시작하지 못했습니다.", error);
+      console.warn("자동 재생에 실패했습니다.", error);
     });
 
     // 한국 시간 시계 및 날짜
@@ -201,9 +243,10 @@
       }).formatToParts(new Date());
 
       const values = {};
-      parts.forEach(part => {
+
+      for (const part of parts) {
         values[part.type] = part.value;
-      });
+      }
 
       document.getElementById("clock").textContent =
         `${values.hour}:${values.minute}:${values.second}`;
@@ -215,86 +258,95 @@
     updateClock();
     setInterval(updateClock, 1000);
 
+    // 날씨 코드에 따른 한국어 설명
+    function getWeatherInfo(code) {
+      if (code === 0) return { description: "맑음", icon: "☀️" };
+      if (code === 1) return { description: "대체로 맑음", icon: "🌤️" };
+      if (code === 2) return { description: "구름 조금", icon: "⛅" };
+      if (code === 3) return { description: "흐림", icon: "☁️" };
+      if (code === 45 || code === 48) {
+        return { description: "안개", icon: "🌫️" };
+      }
+      if (code >= 51 && code <= 57) {
+        return { description: "이슬비", icon: "🌦️" };
+      }
+      if (code >= 61 && code <= 67) {
+        return { description: "비", icon: "🌧️" };
+      }
+      if (code >= 71 && code <= 77) {
+        return { description: "눈", icon: "❄️" };
+      }
+      if (code >= 80 && code <= 82) {
+        return { description: "소나기", icon: "🌦️" };
+      }
+      if (code === 85 || code === 86) {
+        return { description: "눈 소나기", icon: "🌨️" };
+      }
+      if (code >= 95 && code <= 99) {
+        return { description: "뇌우", icon: "⛈️" };
+      }
+
+      return { description: "날씨 정보", icon: "🌡️" };
+    }
+
+    function formatKoreanTime(value) {
+      return new Intl.DateTimeFormat("ko-KR", {
+        timeZone: "Asia/Seoul",
+        hour: "2-digit",
+        minute: "2-digit",
+        hourCycle: "h23"
+      }).format(new Date(value));
+    }
+
     // 서울 실시간 날씨 및 일출·일몰
     async function updateWeather() {
       const url =
         "https://api.open-meteo.com/v1/forecast" +
         "?latitude=37.5665&longitude=126.9780" +
         "&current=temperature_2m,relative_humidity_2m,weather_code" +
-        "&daily=sunrise,sunset&timezone=Asia%2FSeoul";
+        "&daily=sunrise,sunset" +
+        "&timezone=Asia%2FSeoul";
 
       try {
         const response = await fetch(url);
+
         if (!response.ok) {
           throw new Error(`날씨 API 오류: ${response.status}`);
         }
 
         const data = await response.json();
-        const current = data.current;
-        const code = current.weather_code;
 
-        let description = "날씨 정보";
-        let icon = "🌡️";
-
-        if (code === 0) {
-          description = "맑음";
-          icon = "☀️";
-        } else if (code === 1) {
-          description = "대체로 맑음";
-          icon = "🌤️";
-        } else if (code === 2) {
-          description = "구름 조금";
-          icon = "⛅";
-        } else if (code === 3) {
-          description = "흐림";
-          icon = "☁️";
-        } else if (code === 45 || code === 48) {
-          description = "안개";
-          icon = "🌫️";
-        } else if (code >= 51 && code <= 67) {
-          description = "비";
-          icon = "🌧️";
-        } else if (code >= 71 && code <= 77) {
-          description = "눈";
-          icon = "❄️";
-        } else if (code >= 80 && code <= 82) {
-          description = "소나기";
-          icon = "🌦️";
-        } else if (code === 85 || code === 86) {
-          description = "눈 소나기";
-          icon = "🌨️";
-        } else if (code >= 95 && code <= 99) {
-          description = "뇌우";
-          icon = "⛈️";
+        if (!data.current || !data.daily) {
+          throw new Error("날씨 데이터 형식이 올바르지 않습니다.");
         }
+
+        const current = data.current;
+        const weather = getWeatherInfo(current.weather_code);
 
         document.getElementById("temperature").textContent =
           `${Math.round(current.temperature_2m)}°`;
 
-        document.getElementById("weatherIcon").textContent = icon;
+        document.getElementById("weatherIcon").textContent =
+          weather.icon;
 
         document.getElementById("weatherDescription").textContent =
-          `${description} · 습도 ${current.relative_humidity_2m}%`;
-
-        function formatTime(value) {
-          return new Intl.DateTimeFormat("ko-KR", {
-            timeZone: "Asia/Seoul",
-            hour: "2-digit",
-            minute: "2-digit",
-            hourCycle: "h23"
-          }).format(new Date(value));
-        }
+          `${weather.description} · 습도 ${current.relative_humidity_2m}%`;
 
         document.getElementById("sunInfo").textContent =
-          `일출 ${formatTime(data.daily.sunrise[0])} · ` +
-          `일몰 ${formatTime(data.daily.sunset[0])}`;
+          `일출 ${formatKoreanTime(data.daily.sunrise[0])} · ` +
+          `일몰 ${formatKoreanTime(data.daily.sunset[0])}`;
 
         document.getElementById("status").textContent =
-          `LIVE · SEOUL · ${description}`;
+          `LIVE · SEOUL · ${weather.description}`;
+
       } catch (error) {
-        console.error("날씨 정보를 불러오지 못했습니다.", error);
+        console.error("서울 날씨 정보를 불러오지 못했습니다.", error);
+
         document.getElementById("weatherDescription").textContent =
           "날씨 정보를 불러오지 못했습니다.";
+
+        document.getElementById("status").textContent =
+          "LIVE · SEOUL";
       }
     }
 
