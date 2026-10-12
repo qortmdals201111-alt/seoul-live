@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -5,14 +6,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#000000">
   <title>SEOUL LIVE</title>
-
   <style>
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
-    html,
-    body {
+    html, body {
       margin: 0;
       width: 100%;
       height: 100%;
@@ -33,7 +30,6 @@
     #backgroundVideo {
       position: absolute;
       inset: 0;
-      display: block;
       width: 100%;
       height: 100%;
       object-fit: cover;
@@ -46,27 +42,21 @@
       pointer-events: none;
       background: linear-gradient(
         to bottom,
-        rgba(0, 0, 0, 0.22),
+        rgba(0,0,0,.22),
         transparent 25%,
         transparent 70%,
-        rgba(0, 0, 0, 0.28)
+        rgba(0,0,0,.28)
       );
     }
 
-    #topInfo,
-    #clockBox,
-    #weatherBox,
-    #status {
+    #topInfo, #clockBox, #weatherBox, #status {
       position: absolute;
       z-index: 2;
-      color: #fff;
-      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+      color: white;
+      text-shadow: 0 2px 10px rgba(0,0,0,.8);
     }
 
-    #topInfo {
-      top: 28px;
-      left: 32px;
-    }
+    #topInfo { top: 28px; left: 32px; }
 
     #brand {
       font-size: 22px;
@@ -78,7 +68,7 @@
       margin-top: 5px;
       font-size: 12px;
       letter-spacing: 1px;
-      opacity: 0.8;
+      opacity: .8;
     }
 
     #clockBox {
@@ -97,13 +87,10 @@
     #date {
       margin-top: 5px;
       font-size: 12px;
-      opacity: 0.8;
+      opacity: .8;
     }
 
-    #weatherBox {
-      left: 32px;
-      bottom: 28px;
-    }
+    #weatherBox { left: 32px; bottom: 28px; }
 
     #weatherMain {
       display: flex;
@@ -111,8 +98,7 @@
       gap: 10px;
     }
 
-    #weatherIcon,
-    #temperature {
+    #weatherIcon, #temperature {
       font-size: 28px;
       font-weight: 600;
     }
@@ -125,54 +111,28 @@
     #sunInfo {
       margin-top: 5px;
       font-size: 11px;
-      opacity: 0.8;
+      opacity: .8;
     }
 
     #status {
       right: 32px;
       bottom: 28px;
       font-size: 11px;
-      opacity: 0.8;
+      opacity: .8;
       text-align: right;
     }
 
     @media (max-width: 700px) {
-      #topInfo {
-        top: 18px;
-        left: 18px;
-      }
-
-      #clockBox {
-        top: 18px;
-        right: 18px;
-      }
-
-      #weatherBox {
-        left: 18px;
-        bottom: 18px;
-      }
-
-      #status {
-        right: 18px;
-        bottom: 18px;
-      }
-
-      #brand {
-        font-size: 17px;
-      }
-
-      #clock {
-        font-size: 22px;
-      }
-
-      #weatherIcon,
-      #temperature {
-        font-size: 23px;
-      }
+      #topInfo { top: 18px; left: 18px; }
+      #clockBox { top: 18px; right: 18px; }
+      #weatherBox { left: 18px; bottom: 18px; }
+      #status { right: 18px; bottom: 18px; }
+      #brand { font-size: 17px; }
+      #clock { font-size: 22px; }
+      #weatherIcon, #temperature { font-size: 23px; }
     }
   </style>
 </head>
-
 <body>
   <main id="app">
     <video
@@ -210,25 +170,25 @@
   </main>
 
   <script>
-    // 배경 영상
+    // 배경 영상: morning_clear.mp4 하나만 반복 재생
     const video = document.getElementById("backgroundVideo");
 
     video.addEventListener("error", () => {
       console.error(
-        "배경 영상을 불러오지 못했습니다:",
+        "배경 영상 로드 실패:",
         video.currentSrc,
         video.error
       );
+      document.getElementById("status").textContent =
+        "VIDEO LOAD ERROR";
     });
 
     video.play().catch((error) => {
-      console.warn("자동 재생에 실패했습니다.", error);
+      console.warn("자동 재생을 시작하지 못했습니다.", error);
     });
 
     // 한국 시간 시계 및 날짜
     function updateClock() {
-      const now = new Date();
-
       const parts = new Intl.DateTimeFormat("en-GB", {
         timeZone: "Asia/Seoul",
         year: "numeric",
@@ -238,11 +198,10 @@
         minute: "2-digit",
         second: "2-digit",
         hourCycle: "h23"
-      }).formatToParts(now);
+      }).formatToParts(new Date());
 
       const values = {};
-
-      parts.forEach((part) => {
+      parts.forEach(part => {
         values[part.type] = part.value;
       });
 
@@ -261,13 +220,11 @@
       const url =
         "https://api.open-meteo.com/v1/forecast" +
         "?latitude=37.5665&longitude=126.9780" +
-        "&current=temperature_2m,relative_humidity_2m," +
-        "apparent_temperature,is_day,precipitation,weather_code" +
+        "&current=temperature_2m,relative_humidity_2m,weather_code" +
         "&daily=sunrise,sunset&timezone=Asia%2FSeoul";
 
       try {
         const response = await fetch(url);
-
         if (!response.ok) {
           throw new Error(`날씨 API 오류: ${response.status}`);
         }
@@ -276,25 +233,40 @@
         const current = data.current;
         const code = current.weather_code;
 
-        const weatherMap = [
-          [0, 0, "맑음", "☀️"],
-          [1, 1, "대체로 맑음", "🌤️"],
-          [2, 2, "구름 조금", "⛅"],
-          [3, 3, "흐림", "☁️"],
-          [45, 48, "안개", "🌫️"],
-          [51, 67, "비", "🌧️"],
-          [71, 77, "눈", "❄️"],
-          [80, 82, "소나기", "🌦️"],
-          [85, 86, "눈 소나기", "🌨️"],
-          [95, 99, "뇌우", "⛈️"]
-        ];
+        let description = "날씨 정보";
+        let icon = "🌡️";
 
-        const matched = weatherMap.find(
-          (item) => code >= item[0] && code <= item[1]
-        );
-
-        const description = matched ? matched[2] : "날씨 정보";
-        const icon = matched ? matched[3] : "🌡️";
+        if (code === 0) {
+          description = "맑음";
+          icon = "☀️";
+        } else if (code === 1) {
+          description = "대체로 맑음";
+          icon = "🌤️";
+        } else if (code === 2) {
+          description = "구름 조금";
+          icon = "⛅";
+        } else if (code === 3) {
+          description = "흐림";
+          icon = "☁️";
+        } else if (code === 45 || code === 48) {
+          description = "안개";
+          icon = "🌫️";
+        } else if (code >= 51 && code <= 67) {
+          description = "비";
+          icon = "🌧️";
+        } else if (code >= 71 && code <= 77) {
+          description = "눈";
+          icon = "❄️";
+        } else if (code >= 80 && code <= 82) {
+          description = "소나기";
+          icon = "🌦️";
+        } else if (code === 85 || code === 86) {
+          description = "눈 소나기";
+          icon = "🌨️";
+        } else if (code >= 95 && code <= 99) {
+          description = "뇌우";
+          icon = "⛈️";
+        }
 
         document.getElementById("temperature").textContent =
           `${Math.round(current.temperature_2m)}°`;
@@ -321,7 +293,6 @@
           `LIVE · SEOUL · ${description}`;
       } catch (error) {
         console.error("날씨 정보를 불러오지 못했습니다.", error);
-
         document.getElementById("weatherDescription").textContent =
           "날씨 정보를 불러오지 못했습니다.";
       }
